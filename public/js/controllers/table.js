@@ -66,47 +66,82 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, $interval,  sounds 
 	}
 	
 	$scope.startBlindTimer = function() {
-		// Don't start a new fight if we are already fighting
-		if ( angular.isDefined($scope.blindTimer) ) return;
-
-		$scope.blindTimer = $interval(function() {
-		if ($scope.blindHours > 0 || $scope.blindMinutes > 0 || $scope.blindSeconds > 0) {
-			if($scope.blindMinutes > 0){
-				if($scope.blindSeconds > 0){
-					$scope.blindSeconds --
-				}
-				else{
-					$scope.blindSeconds = 60;
-					$scope.blindMinutes --;
-				}
-			}
-			else{
-				if($scope.blindMinutes == 0 && $scope.blindHours > 0){
-					$scope.blindHours --;
-					$scope.blindMinutes = 60;
-				}
-			}
-		} else {
-			$scope.stopBlindTimer();
-		}
-		}, 1000);
+		socket.emit( 'updateBlindTimerStatus', { 'hour': $scope.blindHours, 'minute': $scope.blindMinutes, 'second': $scope.blindSeconds , 'status':"started"}, function( response ) {
+			if( response.success ){
+				$scope.startTimer();
+				$scope.$digest();
+			} 
+		});
 	};
-		
+
 	$scope.stopBlindTimer = function() {
-		if (angular.isDefined($scope.blindTimer)) {
-			$interval.cancel($scope.blindTimer);
-			$scope.blindTimer = undefined;
-		}
+
+		socket.emit( 'updateBlindTimerStatus', { 'hour': $scope.blindHours, 'minute': $scope.blindMinutes, 'second': $scope.blindSeconds , 'status':"stopped"}, function( response ) {
+			if( response.success ){
+				$scope.stopTimer ();
+				$scope.$digest();
+			}
+		});	
 	};
 
 	$scope.resetBlindTimer = function(){
-		clearInterval($scope.blindTimer);
-		$scope.blindHours = 1;
-		$scope.blindMinutes = 0;
-		$scope.blindSeconds = 0;
-		$scope.startBlindTimer();
+		socket.emit( 'updateBlindTimerStatus', { 'hour': $scope.blindHours, 'minute': $scope.blindMinutes, 'second': $scope.blindSeconds , 'status':"reset"}, function( response ) {
+			if( response.success ){
+				$scope.resetTimer();
+				$scope.$digest();
+			}
+		});
 	}
 
+	socket.on( 'blindTimerStatusUpdated', function( data ) {
+		$scope.blindHours = data.hour;
+		$scope.blindMinutes = data.minute;
+		$scope.blindSeconds = data.second;
+		status = data.status;
+		if(status == "started"){ //started
+			$scope.startTimer();
+		}else if(status =="stopped"){ //paused
+			$scope.stopTimer ()
+		}else if(status =="reset"){ //reset
+			$scope.resetTimer();
+		}
+	});
+
+	$scope.startTimer = function(){
+		if ( angular.isDefined($scope.blindTimer) ) return;
+		$scope.blindTimer = $interval(function() {
+			if ($scope.blindHours > 0 || $scope.blindMinutes > 0 || $scope.blindSeconds > 0) {
+				if($scope.blindMinutes > 0){
+					if($scope.blindSeconds > 0){
+						$scope.blindSeconds --
+					}
+					else{
+						$scope.blindSeconds = 59;
+						$scope.blindMinutes --;
+					}
+				}
+				if($scope.blindMinutes == 0 && $scope.blindHours > 0){
+					$scope.blindHours --;
+					$scope.blindMinutes = 59;
+				}
+			} else {
+				$scope.stopTimer($scope.blindTimer);
+			}
+		}, 1000);
+	}
+
+	$scope.stopTimer = function(){
+		if (angular.isDefined($scope.blindTimer)) {
+			$interval.cancel($scope.blindTimer);
+			$scope.blindTimer = undefined;
+		}	
+	}
+
+	$scope.resetTimer = function(){
+		$scope.blindHours = 1;
+		$scope.blindMinutes = 0;
+		$scope.blindSeconds = 0;	
+	}
 	// $scope.showPostSmallBlindButton = function() {
 	// 	return $scope.actionState === "actNotBettedPot" || $scope.actionState === "actBettedPot";
 	// }

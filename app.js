@@ -399,6 +399,22 @@ io.sockets.on('connection', function( socket ) {
 			socket.broadcast.to( 'table-' + players[socket.id].room ).emit( 'receiveMessage', { 'message': htmlEntities( message ), 'sender': players[socket.id].public.name } );
 		}
 	});
+
+	
+	socket.on('updateBlindTimerStatus', function( data, callback ) {
+		if( 
+			typeof data.hour !== 'undefined'
+			&& typeof data.minute !== 'undefined'
+			&& typeof data.second !== 'undefined'
+			&& typeof data.status !== 'undefined'
+			&& typeof players[socket.id] !== 'undefined'
+		){
+			callback( { 'success': true } );
+			io.sockets.in( 'table-' +  players[socket.id].room).emit( "blindTimerStatusUpdated", { 'hour': data.hour, 'minute':data.minute, 'second':data.second, 'status':data.status } );
+		} else {
+			callback( { 'success': false } );
+		}
+	});
 });
 
 /**
