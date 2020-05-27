@@ -85,9 +85,9 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, $interval,  sounds 
 	};
 
 	$scope.resetBlindTimer = function(){
+		$scope.resetTimer();
 		socket.emit( 'updateBlindTimerStatus', { 'hour': $scope.blindHours, 'minute': $scope.blindMinutes, 'second': $scope.blindSeconds , 'status':"reset"}, function( response ) {
 			if( response.success ){
-				$scope.resetTimer();
 				$scope.$digest();
 			}
 		});
